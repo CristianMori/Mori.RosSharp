@@ -319,6 +319,9 @@ public sealed class RosPublisher
     private readonly RosNode.Publication _pub;
     internal RosPublisher(RosNode.Publication pub) => _pub = pub;
 
+    /// <summary>How many TCPROS subscribers are currently connected.</summary>
     public int SubscriberCount => _pub.SubscriberCount;
+
+    /// <summary>Sends one serialized message body to every connected subscriber.</summary>
     public void Publish(byte[] serializedBody) => _pub.Publish(serializedBody);
 }

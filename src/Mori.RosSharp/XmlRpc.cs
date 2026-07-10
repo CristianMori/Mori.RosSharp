@@ -122,6 +122,8 @@ public sealed class XmlRpcServer : IDisposable
     /// <summary>The port the OS assigned (bound on all interfaces).</summary>
     public int Port { get; }
 
+    /// <summary>Starts serving immediately on an OS-assigned port; <paramref name="handler"/>
+    /// receives (method, args) per call and returns the response value.</summary>
     public XmlRpcServer(Func<string, object[], object> handler)
     {
         _handler = handler;
@@ -219,6 +221,7 @@ public sealed class XmlRpcServer : IDisposable
         return -1;
     }
 
+    /// <summary>Stops accepting calls and closes the listener.</summary>
     public void Dispose()
     {
         _running = false;

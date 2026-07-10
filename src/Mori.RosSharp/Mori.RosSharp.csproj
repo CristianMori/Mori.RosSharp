@@ -8,10 +8,19 @@
     <RootNamespace>Mori.RosSharp</RootNamespace>
 
     <PackageId>Mori.RosSharp</PackageId>
-    <Description>A ROS 1 node in pure managed C#: XML-RPC graph APIs and TCPROS transport on raw sockets. No native dependencies, no bridge.</Description>
+    <Version>1.0.0</Version>
+    <Description>A ROS 1 node in pure managed C#: XML-RPC graph APIs and TCPROS transport on raw sockets. Subscribe, publish, and serialize common message types with no native dependencies and no bridge.</Description>
     <Authors>Cristian Mori</Authors>
+    <Copyright>© 2026 Cristian Mori</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>ros;ros1;tcpros;robotics;xmlrpc</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <!-- Intentionally dependency-free and cross-platform: a ROS 1 node is XML-RPC over HTTP plus
        TCPROS framing, both implemented here on raw sockets and System.Xml. -->
