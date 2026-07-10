@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mori.RosSharp/Mori.RosSharp.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/ros-probe/ros-probe.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Mori.RosSharp</RootNamespace>
+
+    <PackageId>Mori.RosSharp</PackageId>
+    <Description>A ROS 1 node in pure managed C#: XML-RPC graph APIs and TCPROS transport on raw sockets. No native dependencies, no bridge.</Description>
+    <Authors>Cristian Mori</Authors>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <!-- Intentionally dependency-free and cross-platform: a ROS 1 node is XML-RPC over HTTP plus
+       TCPROS framing, both implemented here on raw sockets and System.Xml. -->
+
+</Project>
