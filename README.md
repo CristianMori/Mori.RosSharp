@@ -70,12 +70,6 @@ Talking to a roscore inside WSL2 (NAT) from Windows works with two things in pla
   `New-NetFirewallRule -DisplayName "ROS inbound (WSL)" -Direction Inbound -Action Allow -Protocol TCP -RemoteAddress 172.16.0.0/12`
   (elevated) — ROS uses ephemeral ports, so a port-scoped rule is not practical.
 
-## Scope
-
-FMI-style co-simulation hosts, signal graphs, and robot runtimes live elsewhere (this library was
-extracted from [Gemelli Studio](https://github.com/CristianMori/GemelliStudio)); this repo is only
-the ROS 1 wire protocols. ROS 2 (DDS) is a different protocol family and out of scope here.
-
 ## License
 
 Apache License 2.0 © 2026 Cristian Mori. See [LICENSE](LICENSE).
