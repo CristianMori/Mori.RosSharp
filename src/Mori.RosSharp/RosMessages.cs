@@ -14,7 +14,9 @@ public static class RosMessages
 {
     // ---------------------------------------------------------------- geometry_msgs/Twist
 
+    /// <summary>Message type name.</summary>
     public const string TwistType = "geometry_msgs/Twist";
+    /// <summary>Canonical md5sum (gates the TCPROS handshake).</summary>
     public const string TwistMd5 = "9f195f881246fdfa2798d1d3eebca84a";
 
     /// <summary>[linear x y z, angular x y z] → wire body.</summary>
@@ -36,9 +38,12 @@ public static class RosMessages
 
     // ---------------------------------------------------------------- rosgraph_msgs/Clock
 
+    /// <summary>Message type name.</summary>
     public const string ClockType = "rosgraph_msgs/Clock";
+    /// <summary>Canonical md5sum (gates the TCPROS handshake).</summary>
     public const string ClockMd5 = "a9c97c1d230cfc112e270351a944ee47";
 
+    /// <summary>Sim time (seconds) → wire body.</summary>
     public static byte[] EncodeClock(double simTime)
     {
         var w = new Writer(8);
@@ -48,9 +53,12 @@ public static class RosMessages
 
     // ---------------------------------------------------------------- sensor_msgs/JointState
 
+    /// <summary>Message type name.</summary>
     public const string JointStateType = "sensor_msgs/JointState";
+    /// <summary>Canonical md5sum (gates the TCPROS handshake).</summary>
     public const string JointStateMd5 = "3066dcd76a6cfaef579bd0f34173e9fd";
 
+    /// <summary>Joint names + measured vectors → wire body (arrays may be empty to omit).</summary>
     public static byte[] EncodeJointState(
         uint seq, double stamp, string frameId,
         IReadOnlyList<string> names,
@@ -68,7 +76,9 @@ public static class RosMessages
 
     // ---------------------------------------------------------------- nav_msgs/Odometry
 
+    /// <summary>Message type name.</summary>
     public const string OdometryType = "nav_msgs/Odometry";
+    /// <summary>Canonical md5sum (gates the TCPROS handshake).</summary>
     public const string OdometryMd5 = "cd5e73d190d741a2f92e81eda573aca7";
 
     /// <summary>pose7 = [px py pz qx qy qz qw]; vel6 = [v ω]. Covariances are written as zeros.</summary>
@@ -88,11 +98,15 @@ public static class RosMessages
 
     // ---------------------------------------------------------------- tf2_msgs/TFMessage
 
+    /// <summary>Message type name.</summary>
     public const string TfType = "tf2_msgs/TFMessage";
+    /// <summary>Canonical md5sum (gates the TCPROS handshake).</summary>
     public const string TfMd5 = "94810edda583a504dfda3829e70d7eec";
 
+    /// <summary>One transform: parent frame, child frame, and [px py pz qx qy qz qw].</summary>
     public readonly record struct TfEntry(string FrameId, string ChildFrameId, double[] Pose7);
 
+    /// <summary>Transform list → wire body.</summary>
     public static byte[] EncodeTf(uint seq, double stamp, IReadOnlyList<TfEntry> transforms)
     {
         var w = new Writer(64 + transforms.Count * 128);

@@ -24,6 +24,7 @@ public sealed class RosNode : IDisposable
     private readonly Dictionary<string, Publication> _publications = new();
     private volatile bool _disposed;
 
+    /// <summary>This node's name in the ROS graph (e.g. <c>/my_node</c>).</summary>
     public string CallerId { get; }
 
     /// <summary>Our slave XML-RPC endpoint as advertised to the master (diagnostics).</summary>
@@ -289,6 +290,7 @@ public sealed class RosNode : IDisposable
 
     // ---------------------------------------------------------------- teardown
 
+    /// <summary>Unregisters everything from the master and closes all connections.</summary>
     public void Dispose()
     {
         if (_disposed) return;
