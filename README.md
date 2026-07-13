@@ -49,8 +49,8 @@ the definition text. The `Mori.RosSharp.Msg` engine parses `.msg` files and comp
 exactly as ROS does (validated against `rosmsg md5` for all 106 messages in the Noetic
 geometry/std/sensor/nav/rosgraph/actionlib packages), and feeds three consumption styles:
 
-**1. Source generator (recommended).** Add the `Mori.RosSharp.Generators` package, drop `.msg`
-files into the project, and typed classes appear at build time:
+**1. Source generator (recommended).** It ships inside the `Mori.RosSharp` package — drop `.msg`
+files into the project and typed classes appear at build time:
 
 ```xml
 <PropertyGroup>

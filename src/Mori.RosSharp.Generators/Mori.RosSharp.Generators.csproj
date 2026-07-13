@@ -7,26 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Mori.RosSharp.Generators</RootNamespace>
 
-    <!-- Analyzer packaging: the assembly ships under analyzers/, not lib/. -->
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <PackageId>Mori.RosSharp.Generators</PackageId>
-    <Version>1.1.0</Version>
-    <Description>Roslyn source generator for ROS 1 messages: add .msg files as AdditionalFiles and typed serializer classes (with computed md5sums) are generated at build time. Generated code uses the Mori.RosSharp package.</Description>
-    <Authors>Cristian Mori</Authors>
-    <Copyright>© 2026 Cristian Mori</Copyright>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageTags>ros;ros1;msg;sourcegenerator;codegen;robotics</PackageTags>
+    <!-- Not packaged on its own: the built analyzer ships inside the Mori.RosSharp package
+         (analyzers/dotnet/cs), so one PackageReference brings runtime + codegen. -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
     <Compile Include="..\..\shared\*.cs" LinkBase="Shared" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="buildTransitive\Mori.RosSharp.Generators.props" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
 
 </Project>
