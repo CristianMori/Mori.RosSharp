@@ -17,9 +17,11 @@
     <Copyright>© 2026 Cristian Mori</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>ros;ros1;msg;codegen;robotics</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
     <Compile Include="..\..\shared\*.cs" LinkBase="Shared" />
   </ItemGroup>
 
