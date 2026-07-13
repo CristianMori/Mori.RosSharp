@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Mori.RosSharp.MsgGen</RootNamespace>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>rosmsggen</ToolCommandName>
+    <PackageId>Mori.RosSharp.MsgGen</PackageId>
+    <Version>1.1.0</Version>
+    <Description>Generates typed C# serializers from ROS 1 .msg files (message classes with computed md5sums) for use with Mori.RosSharp.</Description>
+    <Authors>Cristian Mori</Authors>
+    <Copyright>© 2026 Cristian Mori</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>ros;ros1;msg;codegen;robotics</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\shared\*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+</Project>

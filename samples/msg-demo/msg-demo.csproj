@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MsgDemo</RootNamespace>
+    <!-- Root namespace for the generated message classes (read by the source generator). -->
+    <RosSharpNamespace>MsgDemo.Ros</RosSharpNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="RosSharpNamespace" />
+    <!-- .msg files under demo_msgs/ become typed classes at build time. -->
+    <AdditionalFiles Include="demo_msgs\*.msg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Mori.RosSharp\Mori.RosSharp.csproj" />
+    <ProjectReference Include="..\..\src\Mori.RosSharp.Generators\Mori.RosSharp.Generators.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

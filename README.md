@@ -42,20 +42,54 @@ dotnet run --project samples/ros-probe -- http://<master-host>:11311/ 30
 then, on the ROS side: `rostopic echo -n 3 /gemelli_chatter` and
 `rostopic pub -r 5 /cmd_vel geometry_msgs/Twist '{linear: {x: 0.25}}'`.
 
-## Bundled message types
+## Messages, three ways
 
-| Type | Encode | Decode |
-|---|---|---|
-| `geometry_msgs/Twist` | ✅ | ✅ |
-| `sensor_msgs/JointState` | ✅ | |
-| `nav_msgs/Odometry` | ✅ | |
-| `rosgraph_msgs/Clock` | ✅ | |
-| `tf2_msgs/TFMessage` | ✅ | |
+Message definitions are `.msg` files; the md5sum that gates every TCPROS handshake is derived from
+the definition text. The `Mori.RosSharp.Msg` engine parses `.msg` files and computes those md5sums
+exactly as ROS does (validated against `rosmsg md5` for all 106 messages in the Noetic
+geometry/std/sensor/nav/rosgraph/actionlib packages), and feeds three consumption styles:
 
-The wire format is simple (little-endian primitives, uint32-prefixed strings and arrays, times as
-two uint32) — adding a type is a dozen lines in the same style. The md5sums are the constants ROS
-derives from the message text; they gate the TCPROS handshake, so a mismatch fails loudly at
-connect time rather than silently corrupting data.
+**1. Source generator (recommended).** Add the `Mori.RosSharp.Generators` package, drop `.msg`
+files into the project, and typed classes appear at build time:
+
+```xml
+<PropertyGroup>
+  <RosSharpNamespace>MyApp.Ros</RosSharpNamespace>  <!-- optional, default RosMessages -->
+</PropertyGroup>
+<ItemGroup>
+  <CompilerVisibleProperty Include="RosSharpNamespace" />
+  <AdditionalFiles Include="my_msgs\*.msg" />       <!-- package name = directory name -->
+</ItemGroup>
+```
+
+```csharp
+var twist = MyApp.Ros.geometry_msgs.Twist.FromBytes(body);
+pub.Publish(new MyApp.Ros.my_msgs.RobotStatus { Mode = "walking" }.ToBytes());
+```
+
+**2. CLI generator.** The `Mori.RosSharp.MsgGen` dotnet tool emits the same classes as files you
+can read and commit — point it at `.msg` files or ROS-style package directories:
+
+```
+rosmsggen -o Generated -n MyApp.Ros path\to\my_msgs \\wsl$\Ubuntu\opt\ros\noetic\share\sensor_msgs\msg
+```
+
+**3. Runtime, no codegen.** `RosMessageDefinition` serializes any type from its definition at
+runtime — dictionaries in, dictionaries out — for generic tooling:
+
+```csharp
+var def = new RosMessageDefinition("geometry_msgs/Twist");
+node.Subscribe("/cmd_vel", def.Type, def.Md5, body =>
+{
+    var v = def.Decode(body);
+    var linear = (Dictionary<string, object?>)v["linear"]!;
+});
+```
+
+Nested types resolve against your files first, then an embedded set of the common messages
+(std_msgs, geometry_msgs, JointState, Imu, Odometry, Clock, TFMessage), and generation closes over
+dependencies — referencing `geometry_msgs/Twist` from a custom message just works. Hand-written
+fast-path serializers for the most common types remain in `RosMessages`.
 
 ## Networking notes
 

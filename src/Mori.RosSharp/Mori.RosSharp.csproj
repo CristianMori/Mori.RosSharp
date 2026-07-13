@@ -8,7 +8,7 @@
     <RootNamespace>Mori.RosSharp</RootNamespace>
 
     <PackageId>Mori.RosSharp</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Description>A ROS 1 node in pure managed C#: XML-RPC graph APIs and TCPROS transport on raw sockets. Subscribe, publish, and serialize common message types with no native dependencies and no bridge.</Description>
     <Authors>Cristian Mori</Authors>
     <Copyright>© 2026 Cristian Mori</Copyright>
@@ -16,10 +16,15 @@
     <PackageTags>ros;ros1;tcpros;robotics;xmlrpc</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: the RosWriter/RosReader primitive overloads are self-describing. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <!-- The .msg parser / md5 engine is shared source with the generator tools (which cannot
+         reference a net8.0 assembly), so it is compiled into each project from shared\. -->
+    <Compile Include="..\..\shared\*.cs" LinkBase="Msg" />
   </ItemGroup>
 
   <!-- Intentionally dependency-free and cross-platform: a ROS 1 node is XML-RPC over HTTP plus

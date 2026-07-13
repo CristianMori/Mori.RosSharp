@@ -1,8 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Mori.RosSharp/Mori.RosSharp.csproj" />
+    <Project Path="src/Mori.RosSharp.MsgGen/Mori.RosSharp.MsgGen.csproj" />
+    <Project Path="src/Mori.RosSharp.Generators/Mori.RosSharp.Generators.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/ros-probe/ros-probe.csproj" />
+    <Project Path="samples/msg-demo/msg-demo.csproj" />
   </Folder>
 </Solution>

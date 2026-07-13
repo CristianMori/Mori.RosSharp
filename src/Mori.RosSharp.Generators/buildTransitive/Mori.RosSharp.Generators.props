@@ -1,0 +1,7 @@
+<Project>
+  <!-- Lets the generator read the RosSharpNamespace MSBuild property (root namespace for the
+       generated message classes; default RosMessages). -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="RosSharpNamespace" />
+  </ItemGroup>
+</Project>
