@@ -13,7 +13,13 @@ namespace Mori.RosSharp.Msg;
 /// </summary>
 public static class MsgMd5
 {
-    public static string Compute(MsgSpec spec, MsgCatalog catalog)
+    public static string Compute(MsgSpec spec, MsgCatalog catalog) =>
+        HashText(CanonicalText(spec, catalog));
+
+    /// <summary>The canonical definition text that gets hashed. Services hash the request and
+    /// response texts concatenated (see <see cref="SrvSpec.Md5"/>), which is why this is exposed
+    /// separately from <see cref="Compute"/>.</summary>
+    public static string CanonicalText(MsgSpec spec, MsgCatalog catalog)
     {
         var lines = new List<string>();
         foreach (MsgConstant c in spec.Constants)
@@ -22,10 +28,15 @@ public static class MsgMd5
             lines.Add(f.IsBuiltin
                 ? $"{f.RawType} {f.Name}"
                 : $"{catalog.Md5(f.BaseType)} {f.Name}");
+        return string.Join("\n", lines);
+    }
 
+    /// <summary>Lowercase hex MD5 of the given text (UTF-8).</summary>
+    public static string HashText(string text)
+    {
         byte[] hash;
         using (var md5 = MD5.Create())
-            hash = md5.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", lines)));
+            hash = md5.ComputeHash(Encoding.UTF8.GetBytes(text));
 
         var hex = new StringBuilder(32);
         foreach (byte b in hash) hex.Append(b.ToString("x2"));

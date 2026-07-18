@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace Mori.RosSharp;
 
@@ -8,9 +9,10 @@ namespace Mori.RosSharp;
 /// (publisherUpdate / requestTopic) on its own XML-RPC endpoint, and moves messages over TCPROS.
 ///
 /// Subscriptions connect out to every publisher the master reports (and reconcile on
-/// publisherUpdate); publications accept TCPROS connections on one shared listener and fan each
-/// published message out to the connected subscribers. Message bodies are opaque byte[] here —
-/// typed serialization lives in <see cref="RosMessages"/> and the consumer.
+/// publisherUpdate); publications and service servers accept TCPROS connections on one shared
+/// listener — the connection header's <c>topic=</c> vs <c>service=</c> field tells them apart.
+/// Message bodies are opaque byte[] here — typed serialization lives in
+/// <see cref="RosMessages"/> and the consumer.
 /// </summary>
 public sealed class RosNode : IDisposable
 {
@@ -22,6 +24,7 @@ public sealed class RosNode : IDisposable
     private readonly object _lock = new();
     private readonly Dictionary<string, Subscription> _subscriptions = new();
     private readonly Dictionary<string, Publication> _publications = new();
+    private readonly Dictionary<string, ServiceServer> _services = new();
     private volatile bool _disposed;
 
     /// <summary>This node's name in the ROS graph (e.g. <c>/my_node</c>).</summary>
@@ -189,6 +192,23 @@ public sealed class RosNode : IDisposable
                     client.NoDelay = true;
                     NetworkStream stream = client.GetStream();
                     Dictionary<string, string> header = TcpRos.ReadHeader(stream);
+
+                    // A service client's header names a service instead of a topic.
+                    if (header.TryGetValue("service", out string? service))
+                    {
+                        ServiceServer? srv;
+                        lock (_lock) _services.TryGetValue(service, out srv);
+                        if (srv is null)
+                        {
+                            stream.Write(TcpRos.EncodeHeader(new Dictionary<string, string>
+                                { ["error"] = $"no service {service}" }));
+                            client.Close();
+                            return;
+                        }
+                        srv.Serve(client, stream, header); // blocks this pool thread for the connection
+                        return;
+                    }
+
                     Publication? pub = null;
                     if (header.TryGetValue("topic", out string? topic))
                         lock (_lock) _publications.TryGetValue(topic, out pub);
@@ -243,6 +263,113 @@ public sealed class RosNode : IDisposable
                 foreach ((TcpClient c, _) in _subscribers) { try { c.Close(); } catch { } }
                 _subscribers.Clear();
             }
+        }
+    }
+
+    // ---------------------------------------------------------------- services
+
+    /// <summary>Our ROSRPC endpoint as advertised to the master (the shared TCPROS listener).</summary>
+    private string ServiceUri => $"rosrpc://{_advertiseHost}:{_tcprosPort}";
+
+    /// <summary>
+    /// Serves a ROS service: <paramref name="handler"/> receives each serialized request body and
+    /// returns the serialized response (worker thread!). Throwing reports a call failure to the
+    /// client without dropping the connection.
+    /// </summary>
+    public RosServiceServer AdvertiseService(string service, string type, string md5, Func<byte[], byte[]> handler)
+    {
+        var srv = new ServiceServer(type, md5, CallerId, handler);
+        lock (_lock) _services[service] = srv;
+        XmlRpc.CallRos(_masterUri, "registerService", CallerId, service, ServiceUri, SlaveUri);
+        return new RosServiceServer(service, srv);
+    }
+
+    /// <summary>
+    /// Calls a service once: looks it up at the master, runs the ROSRPC exchange, and returns the
+    /// serialized response body. Throws when the service is unknown, the md5 doesn't match, or the
+    /// server reports a call failure.
+    /// </summary>
+    public byte[] CallService(string service, string md5, byte[] request, TimeSpan? timeout = null)
+    {
+        if (XmlRpc.CallRos(_masterUri, "lookupService", CallerId, service) is not string rosrpc)
+            throw new IOException($"lookupService {service}: malformed response");
+        var uri = new Uri(rosrpc);
+
+        using var client = new TcpClient();
+        client.NoDelay = true;
+        if (timeout is { } t)
+        {
+            client.SendTimeout = (int)t.TotalMilliseconds;
+            client.ReceiveTimeout = (int)t.TotalMilliseconds;
+        }
+        client.Connect(uri.Host, uri.Port);
+        NetworkStream stream = client.GetStream();
+
+        stream.Write(TcpRos.EncodeHeader(new Dictionary<string, string>
+        {
+            ["callerid"] = CallerId, ["service"] = service, ["md5sum"] = md5,
+        }));
+        Dictionary<string, string> reply = TcpRos.ReadHeader(stream);
+        if (reply.TryGetValue("error", out string? err))
+            throw new IOException($"service {service} refused: {err}");
+
+        TcpRos.WriteMessage(stream, request);
+        int ok = stream.ReadByte(); // the ROSRPC success flag precedes the response body
+        if (ok < 0) throw new IOException($"service {service}: connection closed before reply");
+        byte[] body = TcpRos.ReadMessage(stream);
+        if (ok == 0)
+            throw new IOException($"service {service} call failed: {Encoding.UTF8.GetString(body)}");
+        return body;
+    }
+
+    internal sealed class ServiceServer(string type, string md5, string callerId, Func<byte[], byte[]> handler)
+    {
+        private int _callCount;
+
+        public int CallCount => _callCount;
+
+        // One connection, possibly many calls: rosservice's probes send a header and no request
+        // (EOF ends the loop quietly), regular clients send one request per exchange and
+        // persistent ones keep going.
+        public void Serve(TcpClient client, NetworkStream stream, Dictionary<string, string> requestHeader)
+        {
+            try
+            {
+                // "*" is the wildcard probes and type-agnostic tools send.
+                if (requestHeader.TryGetValue("md5sum", out string? theirs) && theirs != "*" && theirs != md5)
+                {
+                    stream.Write(TcpRos.EncodeHeader(new Dictionary<string, string>
+                        { ["error"] = $"md5 mismatch: expected {md5}, got {theirs}" }));
+                    return;
+                }
+
+                stream.Write(TcpRos.EncodeHeader(new Dictionary<string, string>
+                {
+                    ["callerid"] = callerId, ["md5sum"] = md5, ["type"] = type,
+                    ["request_type"] = type + "Request", ["response_type"] = type + "Response",
+                }));
+
+                while (true)
+                {
+                    byte[] request = TcpRos.ReadMessage(stream); // EOF here ends the connection
+                    byte[] response;
+                    try
+                    {
+                        response = handler(request);
+                    }
+                    catch (Exception ex)
+                    {
+                        stream.WriteByte(0); // failure: the body is the error text
+                        TcpRos.WriteMessage(stream, Encoding.UTF8.GetBytes($"service handler failed: {ex.Message}"));
+                        continue;
+                    }
+                    Interlocked.Increment(ref _callCount);
+                    stream.WriteByte(1);
+                    TcpRos.WriteMessage(stream, response);
+                }
+            }
+            catch { /* client went away — normal end of a non-persistent connection */ }
+            finally { try { client.Close(); } catch { } }
         }
     }
 
@@ -307,12 +434,33 @@ public sealed class RosNode : IDisposable
                 try { XmlRpc.CallRos(_masterUri, "unregisterPublisher", CallerId, topic, SlaveUri); } catch { }
                 pub.CloseAll();
             }
+            foreach (string service in _services.Keys)
+                try { XmlRpc.CallRos(_masterUri, "unregisterService", CallerId, service, ServiceUri); } catch { }
             _subscriptions.Clear();
             _publications.Clear();
+            _services.Clear();
         }
         try { _tcpros.Stop(); } catch { }
         _rpc.Dispose();
     }
+}
+
+/// <summary>Handle for one advertised service.</summary>
+public sealed class RosServiceServer
+{
+    private readonly RosNode.ServiceServer _srv;
+
+    internal RosServiceServer(string service, RosNode.ServiceServer srv)
+    {
+        ServiceName = service;
+        _srv = srv;
+    }
+
+    /// <summary>The graph name this service is registered under (e.g. <c>/set_bool</c>).</summary>
+    public string ServiceName { get; }
+
+    /// <summary>How many calls the handler has answered successfully.</summary>
+    public int CallCount => _srv.CallCount;
 }
 
 /// <summary>Publish handle for one advertised topic.</summary>

@@ -1,19 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Mori.RosSharp</RootNamespace>
 
     <PackageId>Mori.RosSharp</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Description>A ROS 1 node in pure managed C#: XML-RPC graph APIs and TCPROS transport on raw sockets, with .msg-driven serialization — a bundled source generator turns .msg AdditionalFiles into typed classes at build time, or serialize dynamically at runtime. No native dependencies, no bridge.</Description>
     <Authors>Cristian Mori</Authors>
     <Copyright>© 2026 Cristian Mori</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>ros;ros1;tcpros;robotics;xmlrpc</PackageTags>
+    <PackageProjectUrl>https://github.com/CristianMori/Mori.RosSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CristianMori/Mori.RosSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- CS1591: the RosWriter/RosReader primitive overloads are self-describing. -->

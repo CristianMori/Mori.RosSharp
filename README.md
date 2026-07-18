@@ -2,12 +2,14 @@
 
 A **ROS 1 node in pure managed C#** — the actual protocols, not a bridge:
 
-- **XML-RPC graph APIs**: registers with the master (`registerPublisher` / `registerSubscriber`),
-  serves the slave API (`publisherUpdate`, `requestTopic`) on its own endpoint.
+- **XML-RPC graph APIs**: registers with the master (`registerPublisher` / `registerSubscriber` /
+  `registerService`), serves the slave API (`publisherUpdate`, `requestTopic`) on its own endpoint.
 - **TCPROS transport**: the connection-header handshake (topic, type, md5sum, callerid) and
   length-prefixed message framing, on raw sockets.
+- **Services over ROSRPC**: serve services that `rosservice call` can invoke, and call services
+  served by other nodes — request/response on the same shared listener.
 - **Zero dependencies**: BCL only (`System.Net.Sockets`, `System.Xml.Linq`). No native libraries,
-  no rosbridge, no ROS installation on the .NET side. Cross-platform (`net8.0`).
+  no rosbridge, no ROS installation on the .NET side. Cross-platform (`net8.0` / `net10.0`).
 
 A node subscribes, publishes, survives publisher churn (reconnects on `publisherUpdate`), and
 unregisters cleanly on dispose. Message bodies are `byte[]` at the transport layer; hand-rolled
@@ -33,14 +35,57 @@ pub.Publish(RosMessages.EncodeJointState(seq: 0, stamp: 1.25, frameId: "",
     names: ["shoulder", "elbow"], positions: [0.1, -0.4], velocities: [0, 0], efforts: []));
 ```
 
-`samples/ros-probe` is a round-trip smoke test against a live roscore:
+## Services
+
+Serve one (the handler receives the serialized request and returns the serialized response —
+throwing reports a clean call failure to the client):
+
+```csharp
+node.AdvertiseService("/set_bool", "std_srvs/SetBool", srvMd5, request =>
+{
+    bool data = new RosReader(request).ReadBool();
+    var w = new RosWriter();
+    w.Write(true);                 // success
+    w.Write($"received {data}");   // message
+    return w.ToArray();
+});
+```
+
+Call one:
+
+```csharp
+var w = new RosWriter();
+w.Write(true);
+var r = new RosReader(node.CallService("/set_bool", srvMd5, w.ToArray(), TimeSpan.FromSeconds(5)));
+bool success = r.ReadBool();
+string message = r.ReadString();
+```
+
+Service md5sums combine the request and response definitions; compute them from the `.srv` text
+at runtime:
+
+```csharp
+using Mori.RosSharp.Msg;
+string srvMd5 = SrvSpec.Parse("std_srvs/SetBool", "bool data\n---\nbool success\nstring message\n")
+    .Md5(new MsgCatalog());
+```
+
+`rosservice list`, `rosservice info`, and `rosservice call` all see a served service exactly as
+they would one from roscpp/rospy.
+
+## The probe
+
+`samples/ros-probe` exercises everything against a live roscore:
 
 ```
-dotnet run --project samples/ros-probe -- http://<master-host>:11311/ 30
+dotnet run --project samples/ros-probe -- http://<master-host>:11311/ 30        # pub/sub round trip
+dotnet run --project samples/ros-probe -- http://<master-host>:11311/ 30 serve  # serve /set_bool
+dotnet run --project samples/ros-probe -- http://<master-host>:11311/ 30 call   # call /set_bool
 ```
 
-then, on the ROS side: `rostopic echo -n 3 /gemelli_chatter` and
-`rostopic pub -r 5 /cmd_vel geometry_msgs/Twist '{linear: {x: 0.25}}'`.
+then, on the ROS side: `rostopic echo -n 3 /rossharp_chatter`,
+`rostopic pub -r 5 /cmd_vel geometry_msgs/Twist '{linear: {x: 0.25}}'`, or
+`rosservice call /set_bool "data: true"`.
 
 ## Messages, three ways
 

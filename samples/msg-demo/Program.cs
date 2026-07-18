@@ -19,6 +19,19 @@ Check("md5 tf2_msgs/TFMessage", new RosMessageDefinition("tf2_msgs/TFMessage").M
 Check("md5 std_msgs/String", new RosMessageDefinition("std_msgs/String").Md5, "992ce8a1687cec8c8bd883ec73ca41d1");
 Check("md5 std_msgs/Empty", new RosMessageDefinition("std_msgs/Empty").Md5, "d41d8cd98f00b204e9800998ecf8427e");
 
+// Service md5s: request + response canonical texts concatenated (rossrv md5 ground truth).
+// GetPlan nests geometry_msgs/PoseStamped and nav_msgs/Path, so it also proves nested-type
+// md5 substitution inside service halves.
+var srvCatalog = new Mori.RosSharp.Msg.MsgCatalog(fullType =>
+    fullType == "nav_msgs/Path" ? "Header header\ngeometry_msgs/PoseStamped[] poses\n" : null);
+Check("srv md5 std_srvs/SetBool",
+    Mori.RosSharp.Msg.SrvSpec.Parse("std_srvs/SetBool", "bool data\n---\nbool success\nstring message\n").Md5(srvCatalog),
+    "09fb03525b03e7ea1fd3992bafd87e16");
+Check("srv md5 nav_msgs/GetPlan",
+    Mori.RosSharp.Msg.SrvSpec.Parse("nav_msgs/GetPlan",
+        "geometry_msgs/PoseStamped start\ngeometry_msgs/PoseStamped goal\nfloat32 tolerance\n---\nnav_msgs/Path plan\n").Md5(srvCatalog),
+    "421c8ea4d21c6c9db7054b4bbdf1e024");
+
 // 2 — dynamic encode vs hand-rolled bytes.
 var twistDef = new RosMessageDefinition("geometry_msgs/Twist");
 byte[] dynamicBytes = twistDef.Encode(new Dictionary<string, object?>
